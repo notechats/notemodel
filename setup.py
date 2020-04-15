@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-install_requires = ['numpy', 'hashlib', 'sqlite3', 'pickle']
+install_requires = ['numpy']
 
 setup(name='notemodel',
       version='0.0.1',
