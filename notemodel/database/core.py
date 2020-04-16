@@ -5,6 +5,7 @@ import sqlite3
 
 import numpy as np
 import tensorflow.keras.backend as K
+from tqdm import tqdm
 
 weight_path = None
 
@@ -110,7 +111,7 @@ def save_layers(layers, model_name, filename):
             data[md5] = weight_array
 
     file_path = get_file_path(filename)
-
+    print("save to {}".format(file_path))
     pickle.dump(data, open(file_path, 'wb'))
 
 
@@ -118,28 +119,35 @@ def load_layers(layers, model_name):
     layerWeight = WeightDB()
     layerWeight.create()
 
-    for layer in layers:
-        if len(layer.weights) > 0:
-            name = layer.name
-            _class = type(layer)._keras_api_names[-1]
+    for layer in tqdm(layers, desc='load weight'):
+        if len(layer.weights) == 0:
+            continue
 
-            res = layerWeight.select_by_name(model_name, _class, name)
-            if len(res) == 0:
-                continue
-            elif len(res) > 1:
-                print("error")
+        name = layer.name
+        _class = type(layer)._keras_api_names[-1]
 
-            md5, filename = res[0][4], res[0][5]
-            file_path = get_file_path(filename)
-            # print(file_path)
-            if not os.path.exists(file_path):
-                print('file not exist downloading to {}'.format(file_path))
+        res = layerWeight.select_by_name(model_name, _class, name)
+        if len(res) == 0:
+            continue
+        elif len(res) > 1:
+            print("error")
 
-            if os.path.exists(file_path):
-                data = pickle.load(open(file_path, 'rb'))
+        md5, filename = res[0][4], res[0][5]
+        file_path = get_file_path(filename)
+        # print(file_path)
+        if not os.path.exists(file_path):
+            print('file not exist downloading to {}'.format(file_path))
 
-                if md5 in data.keys():
-                    try:
-                        [K.set_value(weight, np.array(data[md5][i])) for i, weight in enumerate(layer.weights)]
-                    except Exception as e:
-                        print(e)
+        if os.path.exists(file_path):
+            data = pickle.load(open(file_path, 'rb'))
+
+            if md5 in data.keys():
+                try:
+                    layer.set_weights(data[md5])
+                    [K.set_value(weight, np.array(data[md5][i])) for i, weight in enumerate(layer.weights)]
+                except Exception as e:
+                    print(e)
+            else:
+                print('layer weight not find')
+        else:
+            print('file not exist')
