@@ -142,10 +142,10 @@ def load_layers(layers, model_name, md5_list):
             continue
         md5_i += 1
 
-        # res = layerWeight.select_by_md5(model_name, md5_list[md5_i])
-        name = layer.name
-        _class = type(layer)._keras_api_names[-1]
-        res = layerWeight.select_by_name(model_name, _class, name)
+        res = layerWeight.select_by_md5(model_name, md5_list[md5_i])
+        # name = layer.name
+        # _class = type(layer)._keras_api_names[-1]
+        # res = layerWeight.select_by_name(model_name, _class, name)
         if len(res) == 0:
             continue
         elif len(res) > 1:
