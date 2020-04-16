@@ -7,6 +7,7 @@ from notekeras.utils import read_lines
 
 # import tensorflow as tf
 # tf.config.experimental_run_functions_eagerly(True)
+
 classes = read_lines("coco.names")
 
 
@@ -29,13 +30,15 @@ yolo_body1 = YoloBody(anchors=anchors, num_classes=len(classes))
 yolo_body2 = YoloBody(anchors=anchors, num_classes=len(classes))
 yolo_body1.load_weights("/Users/liangtaoniu/workspace/MyDiary/tmp/models/yolo/configs/yolov3.h5", freeze_body=3)
 
-# save_layers(yolo_body.yolo_model.layers, model_name='yolov3', filename='yolov3.weight')
+# save_layers(yolo_body1.yolo_model.layers, model_name='yolov3', filename='yolov3.weight')
 yolo_body2.load_layer_weights()
 # load_layers(yolo_body2.yolo_model.layers, model_name='yolov3')
 
+
 for i, layer1 in enumerate(yolo_body1.yolo_model.layers):
-    layer2 = yolo_body1.yolo_model.layers[i]
+    layer2 = yolo_body2.yolo_model.layers[i]
 
     weight1 = layer1.weights
     weight2 = layer2.weights
-    print(i)
+    if i in (0, 10, 50, 100, 150, 200, 240):
+        print(i)

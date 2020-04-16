@@ -3,8 +3,6 @@ import os
 import pickle
 import sqlite3
 
-import numpy as np
-import tensorflow.keras.backend as K
 from tqdm import tqdm
 
 weight_path = None
@@ -68,6 +66,8 @@ class WeightDB:
         )
         if len(list(res)) == 0:
             self.insert(model, _class, name, md5, filename)
+            return True
+        return False
 
     def select_by_name(self, model='', _class='', name=''):
         name = name.replace("'", '')
@@ -77,6 +77,20 @@ class WeightDB:
         )
 
         return list(res)
+
+    def select_by_md5(self, model='', md5=''):
+        res = self.execute(
+            """select * from {} where model='{}' and md5='{}' limit 10
+            """.format(self.table_name, model, md5)
+        )
+
+        return list(res)
+
+    def count(self):
+        res = self.execute("""select count(1) from  {}""".format(self.table_name))
+
+        urls = []
+        return urls
 
     def select(self, size=50):
         res = self.execute("""select * from  {} limit {} """.format(self.table_name, size))
@@ -97,35 +111,40 @@ def save_layers(layers, model_name, filename):
 
     data = {}
     for layer in layers:
-        if len(layer.weights) > 0:
-            m = hashlib.md5()
-            weight_array = []
-            for weight in layer.weights:
-                m.update(weight.numpy())
-                weight_array.append(weight.numpy())
-            md5 = m.hexdigest()
-            name = layer.name
-            _class = type(layer)._keras_api_names[-1]
+        if len(layer.weights) == 0:
+            continue
+        m = hashlib.md5()
+        weight_array = []
+        for weight in layer.weights:
+            m.update(weight.numpy())
+            weight_array.append(weight.numpy())
+        md5 = m.hexdigest()
+        name = layer.name
+        _class = type(layer)._keras_api_names[-1]
 
-            layerWeight.insert_if_not_exist(model=model_name, _class=_class, name=name, md5=md5, filename=filename)
-            data[md5] = weight_array
-
+        insert = layerWeight.insert_if_not_exist(model=model_name, _class=_class, name=name, md5=md5, filename=filename)
+        data[md5] = weight_array
+        print("{} {}".format(insert, md5))
+    print(layerWeight.count())
+    layerWeight.close()
     file_path = get_file_path(filename)
     print("save to {}".format(file_path))
     pickle.dump(data, open(file_path, 'wb'))
 
 
-def load_layers(layers, model_name):
+def load_layers(layers, model_name, md5_list):
     layerWeight = WeightDB()
     layerWeight.create()
 
+    md5_i = -1
     for layer in tqdm(layers, desc='load weight'):
-        if len(layer.weights) == 0:
+        if len(layer.weights) == 0 or md5_i >= len(md5_list) - 1:
             continue
+        md5_i += 1
 
+        # res = layerWeight.select_by_md5(model_name, md5_list[md5_i])
         name = layer.name
         _class = type(layer)._keras_api_names[-1]
-
         res = layerWeight.select_by_name(model_name, _class, name)
         if len(res) == 0:
             continue
@@ -134,7 +153,7 @@ def load_layers(layers, model_name):
 
         md5, filename = res[0][4], res[0][5]
         file_path = get_file_path(filename)
-        # print(file_path)
+
         if not os.path.exists(file_path):
             print('file not exist downloading to {}'.format(file_path))
 
@@ -144,7 +163,7 @@ def load_layers(layers, model_name):
             if md5 in data.keys():
                 try:
                     layer.set_weights(data[md5])
-                    [K.set_value(weight, np.array(data[md5][i])) for i, weight in enumerate(layer.weights)]
+                    # [K.set_value(weight, np.array(data[md5][i])) for i, weight in enumerate(layer.weights)]
                 except Exception as e:
                     print(e)
             else:
