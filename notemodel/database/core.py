@@ -132,6 +132,9 @@ def load_layers(layers, model_name):
             md5, filename = res[0][4], res[0][5]
             file_path = get_file_path(filename)
             # print(file_path)
+            if not os.path.exists(file_path):
+                print('file not exist downloading to {}'.format(file_path))
+
             if os.path.exists(file_path):
                 data = pickle.load(open(file_path, 'rb'))
 
