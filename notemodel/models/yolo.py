@@ -2,7 +2,7 @@ import hashlib
 
 import numpy as np
 
-from notekeras.model.yolo import YoloBody
+from notekeras.model.yolo3 import YoloBody
 from notekeras.utils import read_lines
 from notemodel.database import set_weight_path
 
